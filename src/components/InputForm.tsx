@@ -10,15 +10,22 @@ import { Textarea } from '@/components/ui/textarea'
 interface InputFormProps {
     value: GeneratorInput
     onChange: (nextValue: GeneratorInput) => void
-    onSubmit: () => void
+    onSubmit: (nextValue?: GeneratorInput) => void
+    hasPendingChanges: boolean
 }
 
-export function InputForm({ value, onChange, onSubmit }: InputFormProps) {
+export function InputForm({ value, onChange, onSubmit, hasPendingChanges }: InputFormProps) {
     const updateField = (field: keyof GeneratorInput, nextValue: string | PlanPeriod) => {
-        onChange({
+        const nextFormValue = {
             ...value,
             [field]: nextValue,
-        })
+        }
+
+        onChange(nextFormValue)
+
+        if (field === 'period') {
+            onSubmit(nextFormValue)
+        }
     }
 
     return (
@@ -75,8 +82,8 @@ export function InputForm({ value, onChange, onSubmit }: InputFormProps) {
                     </div>
                 </div>
 
-                <Button size="lg" className="w-full" onClick={onSubmit}>
-                    生成内容日历
+                <Button size="lg" className="w-full" onClick={() => onSubmit()}>
+                    {hasPendingChanges ? '生成内容日历' : '已同步当前结果'}
                 </Button>
             </CardContent>
         </Card>

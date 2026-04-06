@@ -18,18 +18,38 @@ function createPlan(input: GeneratorInput): GeneratedPlan {
     return generateCalendarPlan(input)
 }
 
+function isSameInput(left: GeneratorInput, right: GeneratorInput) {
+    return (
+        left.niche === right.niche &&
+        left.audience === right.audience &&
+        left.style === right.style &&
+        left.period === right.period
+    )
+}
+
 function App() {
     const [input, setInput] = useState<GeneratorInput>(defaultInput)
     const [plan, setPlan] = useState<GeneratedPlan>(() => createPlan(defaultInput))
+    const [lastGeneratedInput, setLastGeneratedInput] = useState<GeneratorInput>(defaultInput)
+    const [lastGeneratedAt, setLastGeneratedAt] = useState<number>(() => Date.now())
 
-    const handleGenerate = () => {
-        setPlan(createPlan(input))
+    const handleGenerate = (nextInput = input) => {
+        setInput(nextInput)
+        setPlan(createPlan(nextInput))
+        setLastGeneratedInput(nextInput)
+        setLastGeneratedAt(Date.now())
     }
 
     const handlePreset = (preset: PresetExample) => {
-        setInput(preset.input)
-        setPlan(createPlan(preset.input))
+        handleGenerate(preset.input)
     }
+
+    const hasPendingChanges = !isSameInput(input, lastGeneratedInput)
+    const generatedPeriodLabel = lastGeneratedInput.period === 'week' ? '7天' : '30天'
+    const generatedTimeLabel = new Intl.DateTimeFormat('zh-CN', {
+        hour: '2-digit',
+        minute: '2-digit',
+    }).format(lastGeneratedAt)
 
     return (
         <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
@@ -97,8 +117,14 @@ function App() {
                         </div>
                     </div>
 
-                    <Button variant="secondary" className="w-full" onClick={handleGenerate}>
-                        重新生成当前方案
+                    <div className="rounded-2xl border border-white/70 bg-white/70 px-4 py-3 text-sm text-muted-foreground shadow-sm">
+                        {hasPendingChanges
+                            ? '你已经修改了输入，结果区还没刷新。点击“生成内容日历”即可更新。'
+                            : `已更新 ${generatedPeriodLabel} 计划，最近一次生成时间 ${generatedTimeLabel}。`}
+                    </div>
+
+                    <Button variant="secondary" className="w-full" onClick={() => handleGenerate()}>
+                        {hasPendingChanges ? '应用当前输入并重新生成' : '重新生成当前方案'}
                     </Button>
                 </div>
             </section>
@@ -106,7 +132,12 @@ function App() {
             <section className="mt-6 grid gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
                 <div className="space-y-6 xl:sticky xl:top-6 xl:self-start">
                     <PresetExamples onApply={handlePreset} />
-                    <InputForm value={input} onChange={setInput} onSubmit={handleGenerate} />
+                    <InputForm
+                        value={input}
+                        onChange={setInput}
+                        onSubmit={handleGenerate}
+                        hasPendingChanges={hasPendingChanges}
+                    />
                 </div>
 
                 <div className="space-y-6">
